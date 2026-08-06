@@ -1,0 +1,157 @@
+-- t7mx dev | Blockspin (Multi-Target & Death Screen Edition V158)
+-- 100% ENGLISH | NO ARABIC | NUMBERS ONLY FIX | Custom Background
+getgenv().SilentAim = true
+getgenv().ShowTracers = true
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "t7mx dev | Blockspin",
+   LoadingTitle = "Multi-Target & Death Screen Edition",
+   ConfigurationSaving = {Enabled = false},
+   Background = "rbxassetid://16032889269" -- خلفية الأيادي الحمراء
+})
+
+local Main = Window:CreateTab("Control Center")
+local Combat = Window:CreateTab("Combat Pro")
+
+-- // Function to sort labels (Top is Level, Bottom is Name)
+local function GetSortedLabels(char)
+    local labels = {}
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("TextLabel") and v.Visible then table.insert(labels, v) end
+        end
+        table.sort(labels, function(a, b) return a.AbsolutePosition.Y < b.AbsolutePosition.Y end)
+    end
+    return labels
+end
+
+-- // --- [ MY PROFILE ] ---
+Main:CreateSection("My Profile (t7mx dev)")
+
+Main:CreateInput({
+   Name = "Set My Name (t7mx)",
+   PlaceholderText = "New Name...",
+   Callback = function(t)
+       local labels = GetSortedLabels(game.Players.LocalPlayer.Character)
+       if #labels >= 2 then labels[2].Text = t elseif #labels == 1 then labels[1].Text = t end
+   end,
+})
+
+Main:CreateInput({
+   Name = "Set My Level (t7mx)",
+   PlaceholderText = "Numbers Only (e.g. 86)",
+   Callback = function(l)
+       local labels = GetSortedLabels(game.Players.LocalPlayer.Character)
+       local numOnly = l:gsub("%D", "") 
+       if #labels >= 1 then labels[1].Text = numOnly end
+   end,
+})
+
+-- // --- [ TARGET PLAYERS LOOP ] ---
+for i = 1, 4 do
+    Main:CreateSection("Target Player " .. i .. " (by t7mx)")
+    
+    local TargetOther = ""
+    
+    Main:CreateInput({
+       Name = "1. Target Username",
+       PlaceholderText = "Search player " .. i .. "...",
+       Callback = function(t) TargetOther = t:lower() end,
+    })
+
+    Main:CreateInput({
+       Name = "2. Change Fake Name",
+       PlaceholderText = "New name for Target " .. i .. "...",
+       Callback = function(n)
+           for _, p in pairs(game.Players:GetPlayers()) do
+               if p.Name:lower():find(TargetOther) and p.Character then
+                   local labels = GetSortedLabels(p.Character)
+                   if #labels >= 2 then labels[2].Text = n end
+               end
+           end
+       end,
+    })
+
+    Main:CreateInput({
+       Name = "3. Change Fake Level",
+       PlaceholderText = "Numbers Only...",
+       Callback = function(l)
+           local numOnly = l:gsub("%D", "")
+           for _, p in pairs(game.Players:GetPlayers()) do
+               if p.Name:lower():find(TargetOther) and p.Character then
+                   local labels = GetSortedLabels(p.Character)
+                   if #labels >= 1 then labels[1].Text = numOnly end
+               end
+           end
+       end,
+    })
+end
+
+-- // --- [ FAKE DEATH SCREEN & SYSTEM ] ---
+Main:CreateSection("Fake Death & Kill Screen")
+
+local CustomDeathName = "Unknown"
+local DeathDisguiseEnabled = false
+
+Main:CreateInput({
+   Name = "Target Killer Name",
+   PlaceholderText = "Type killer name here...",
+   Callback = function(Text)
+      CustomDeathName = Text
+   end,
+})
+
+Main:CreateToggle({
+   Name = "Smooth Death Screen Disguise",
+   CurrentValue = false,
+   Callback = function(Value)
+      DeathDisguiseEnabled = Value
+      if DeathDisguiseEnabled then
+          task.spawn(function()
+              local pGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+              
+              while DeathDisguiseEnabled do
+                  for _, p in pairs(game.Players:GetPlayers()) do
+                      p.DisplayName = CustomDeathName
+                  end
+                  
+                  for _, gui in pairs(pGui:GetChildren()) do
+                      if gui:IsA("ScreenGui") and gui.Enabled then
+                          for _, v in pairs(gui:GetDescendants()) do
+                              if v:IsA("TextLabel") and v.Visible and v.Text ~= "" then
+                                  if v.TextColor3.R > 0.6 or v.Text:find("turned") or v.Text:find("folded") or v.Text:find("killed") or v.Text:find("by") then
+                                      for _, p in pairs(game.Players:GetPlayers()) do
+                                          if v.Text:find(p.Name) then
+                                              v.Text = v.Text:gsub(p.Name, CustomDeathName)
+                                          end
+                                      end
+                                  end
+                              end
+                          end
+                      end
+                  end
+                  task.wait(0.3)
+              end
+          end)
+      end
+   end,
+})
+
+-- // --- [ COMBAT PRO ] ---
+Combat:CreateSection("Combat Settings (t7mx dev)")
+
+Combat:CreateToggle({
+   Name = "Silent Aim",
+   CurrentValue = true,
+   Callback = function(v) getgenv().SilentAim = v end,
+})
+
+Combat:CreateToggle({
+   Name = "Red Tracers",
+   CurrentValue = true,
+   Callback = function(v) getgenv().ShowTracers = v end,
+})
+
+Rayfield:Notify({Title = "t7mx V158 Active", Content = "Full Death Screen & Targets Ready!", Duration = 5})
