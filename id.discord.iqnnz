@@ -1,0 +1,61 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "R-Menu | Heisenberg Lite",
+   LoadingTitle = "Optimizing Performance...",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationOverride = { DefaultSize = Vector2.new(400, 350), SaveConfiguration = false }
+})
+
+local Tab = Window:CreateTab("Main Settings", 4483362458)
+local CustomName = "Unknown"
+local DisguiseEnabled = false
+
+Tab:CreateInput({
+   Name = "Target Fake Name",
+   PlaceholderText = "Type name here...",
+   Callback = function(Text)
+      CustomName = Text
+   end,
+})
+
+Tab:CreateToggle({
+   Name = "Smooth Disguise",
+   CurrentValue = false,
+   Callback = function(Value)
+      DisguiseEnabled = Value
+      if DisguiseEnabled then
+          task.spawn(function()
+              -- نحفظ نسخة من الـ PlayerGui عشان نوصل لها أسرع
+              local pGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+              
+              while DisguiseEnabled do
+                  -- 1. تغيير الأسماء في القائمة (مرة كل ثانية يكفي)
+                  for _, p in pairs(game.Players:GetPlayers()) do
+                      p.DisplayName = CustomName
+                  end
+                  
+                  -- 2. فحص ذكي للرسائل اللي تظهر فقط (ScreenGuis)
+                  -- بدال ما نفحص كل شيء، نفحص فقط العناصر الظاهرة
+                  for _, gui in pairs(pGui:GetChildren()) do
+                      if gui:IsA("ScreenGui") and gui.Enabled then
+                          for _, v in pairs(gui:GetDescendants()) do
+                              if v:IsA("TextLabel") and v.Visible and v.Text ~= "" then
+                                  -- إذا كان النص أحمر أو يحتوي على كلمات القتل المعروفة
+                                  if v.TextColor3.R > 0.6 or v.Text:find("turned") or v.Text:find("folded") then
+                                      for _, p in pairs(game.Players:GetPlayers()) do
+                                          if v.Text:find(p.Name) then
+                                              v.Text = v.Text:gsub(p.Name, CustomName)
+                                          end
+                                      end
+                                  end
+                              end
+                          end
+                      end
+                  end
+                  task.wait(0.3) -- تأخير بسيط (300ms) ينهي التقطيع تماماً ولا يلاحظه اللاعب
+              end
+          end)
+      end
+   end,
+})
