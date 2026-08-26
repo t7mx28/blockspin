@@ -1,0 +1,439 @@
+-- تأخير تشغيل السكربت لمدة 15 ثانية أول ما تحقنه في الأكسكيوتور
+task.wait(15)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- إعدادات الحالة العامة
+local espInventoryEnabled = true 
+local MAX_DISTANCE = 4000 
+local BillboardCache = {}
+local nameCache = {} 
+
+local AimbotOn = false
+local FOVRadius = 260 
+local AutoDrinkOn = false
+
+local ProtectedPlayers = {}
+local PlayerButtons = {}
+local AIM_SMOOTHNESS = 0.98
+local guiOpen = true
+local lastDrinkTime = 0
+local DRINK_COOLDOWN = 15
+
+local function getEnglishName(t)
+    if not t or not t.Name then return nil end
+    local originalName = t.Name
+    if nameCache[originalName] then return nameCache[originalName] end
+    local cleanName = originalName:gsub("Item", ""):gsub("_", " ")
+    nameCache[originalName] = cleanName
+    return cleanName
+end
+
+local function updateESP(p)
+    local bb = BillboardCache[p]
+    if not bb then return end
+    
+    local char = p.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then 
+        bb.Enabled = false
+        return 
+    end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    
+    local lChar = LocalPlayer.Character
+    if lChar and lChar:FindFirstChild("HumanoidRootPart") then
+        local dist = (lChar.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+        if dist > MAX_DISTANCE then
+            bb.Enabled = false
+            return
+        end
+    end
+
+    local container = bb:FindFirstChild("EspContainer")
+    if not container then return end
+    container:ClearAllChildren()
+
+    -- 1. اسم اللاعب (Username)
+    local nameLbl = Instance.new("TextLabel", container)
+    nameLbl.Size = UDim2.new(0, 200, 0, 18)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = p.DisplayName
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.TextSize = 13
+    nameLbl.TextStrokeTransparency = 0.1
+    nameLbl.TextColor3 = Color3.fromRGB(255, 80, 255)
+
+    -- 2. الهيل (HP) بعيد ومفصول عن الاسم بمسافة مرتبة
+    if hum then
+        local space1 = Instance.new("Frame", container)
+        space1.Size = UDim2.new(0, 200, 0, 4)
+        space1.BackgroundTransparency = 1
+
+        local hpLbl = Instance.new("TextLabel", container)
+        hpLbl.Size = UDim2.new(0, 200, 0, 16)
+        hpLbl.BackgroundTransparency = 1
+        local healthPercent = math.clamp(math.floor((hum.Health / hum.MaxHealth) * 100), 0, 100)
+        hpLbl.Text = "HP: " .. healthPercent .. "%"
+        hpLbl.Font = Enum.Font.GothamBold
+        hpLbl.TextSize = 12
+        hpLbl.TextStrokeTransparency = 0.2
+        hpLbl.TextColor3 = Color3.fromRGB(255 - (healthPercent * 1.5), healthPercent * 2.2, 50)
+    end
+
+    local tools = {}
+    if p:FindFirstChild("Backpack") then
+        for _, t in ipairs(p.Backpack:GetChildren()) do
+            if t:IsA("Tool") then table.insert(tools, t) end
+        end
+    end
+    if char then
+        for _, t in ipairs(char:GetChildren()) do
+            if t:IsA("Tool") then table.insert(tools, t) end
+        end
+    end
+
+    bb.Enabled = espInventoryEnabled
+    
+    -- 3. اللوت (الأدوات) تحت الهيل بمسافة واضحة وغير متلاصقة
+    if #tools > 0 then
+        local space2 = Instance.new("Frame", container)
+        space2.Size = UDim2.new(0, 200, 0, 6)
+        space2.BackgroundTransparency = 1
+
+        for _, tool in ipairs(tools) do
+            local name = getEnglishName(tool)
+            if name then
+                local lbl = Instance.new("TextLabel", container)
+                lbl.Size = UDim2.new(0, 200, 0, 15)
+                lbl.BackgroundTransparency = 1
+                lbl.Text = name
+                lbl.Font = Enum.Font.GothamMedium
+                lbl.TextSize = 11
+                lbl.TextStrokeTransparency = 0.2
+                lbl.TextColor3 = Color3.fromRGB(0, 255, 170)
+            end
+        end
+    end
+end
+
+local function createESP(p)
+    if p == LocalPlayer then return end
+    
+    local function setup(char)
+        if not char then return end
+        local root = char:WaitForChild("HumanoidRootPart", 15)
+        local hum = char:WaitForChild("Humanoid", 15)
+        if not root then return end
+        
+        if BillboardCache[p] then 
+            pcall(function() BillboardCache[p]:Destroy() end)
+        end
+        
+        local bb = Instance.new("BillboardGui")
+        bb.Name = "t7mx_ESP"
+        bb.Parent = root
+        bb.Size = UDim2.new(0, 220, 0, 300)
+        bb.StudsOffset = Vector3.new(0, -5.5, 0) -- تحت الأقدام بمسافة عميقة وواضحة جداً
+        bb.AlwaysOnTop = true
+        bb.MaxDistance = MAX_DISTANCE
+        
+        local cont = Instance.new("Frame", bb)
+        cont.Name = "EspContainer"
+        cont.Size = UDim2.new(1, 0, 1, 0)
+        cont.BackgroundTransparency = 1
+        
+        local layout = Instance.new("UIListLayout", cont)
+        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        layout.VerticalAlignment = Enum.VerticalAlignment.Top 
+        layout.Padding = UDim.new(0, 2)
+        
+        BillboardCache[p] = bb
+        updateESP(p)
+        
+        local bp = p:WaitForChild("Backpack", 5)
+        if bp then
+            bp.ChildAdded:Connect(function() updateESP(p) end)
+            bp.ChildRemoved:Connect(function() updateESP(p) end)
+        end
+        char.ChildAdded:Connect(function(c) if c:IsA("Tool") then updateESP(p) end end)
+        char.ChildRemoved:Connect(function(c) if c:IsA("Tool") then updateESP(p) end end)
+        if hum then
+            hum.HealthChanged:Connect(function() updateESP(p) end)
+        end
+    end
+    
+    p.CharacterAdded:Connect(setup)
+    if p.Character then setup(p.Character) end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do createESP(p) end
+Players.PlayerAdded:Connect(createESP)
+
+-- الواجهة الفخمة
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "t7mx_Hub_Pro"
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ResetOnSpawn = false
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+local ToggleButton = Instance.new("TextButton", ScreenGui)
+ToggleButton.Size = UDim2.new(0, 95, 0, 34)
+ToggleButton.Position = UDim2.new(0.88, 0, 0.04, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(110, 0, 220)
+ToggleButton.Text = "CLOSE"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 13
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 330, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -165, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+
+local TitleLabel = Instance.new("TextLabel", MainFrame)
+TitleLabel.Size = UDim2.new(1, 0, 0, 42)
+TitleLabel.BackgroundColor3 = Color3.fromRGB(18, 16, 28)
+TitleLabel.Text = "#t7mx | ULTRA AI HUB"
+TitleLabel.TextColor3 = Color3.fromRGB(170, 70, 255)
+TitleLabel.TextSize = 14
+TitleLabel.Font = Enum.Font.GothamBold
+Instance.new("UICorner", TitleLabel).CornerRadius = UDim.new(0, 12)
+
+local ContainerLayout = Instance.new("UIListLayout", MainFrame)
+ContainerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ContainerLayout.Padding = UDim.new(0, 6)
+
+local PaddingFrame = Instance.new("Frame", MainFrame)
+PaddingFrame.Size = UDim2.new(1, 0, 0, 4)
+PaddingFrame.BackgroundTransparency = 1
+PaddingFrame.LayoutOrder = 1
+
+local function createSimpleButton(name, text, color, order)
+    local btn = Instance.new("TextButton", MainFrame)
+    btn.Name = name
+    btn.Size = UDim2.new(0.92, 0, 0, 34)
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamBold
+    btn.LayoutOrder = order
+    btn.Active = true
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    return btn
+end
+
+local ESPInventoryToggle = createSimpleButton("LootBtn", "Loot & Name ESP: Active", Color3.fromRGB(0, 200, 100), 2)
+local AimbotToggle = createSimpleButton("AimBtn", "AI Ultra Aim-Lock: Off", Color3.fromRGB(200, 50, 50), 3)
+local AimPartToggle = createSimpleButton("ModeBtn", "Target: Underfoot (Jump AI)", Color3.fromRGB(110, 0, 220), 4)
+local AutoDrinkToggle = createSimpleButton("DrinkBtn", "Auto Drink Slot 2 Only: Off", Color3.fromRGB(200, 50, 50), 5)
+
+local PlayerListFrame = Instance.new("ScrollingFrame", MainFrame)
+PlayerListFrame.Size = UDim2.new(0.92, 0, 0, 75)
+PlayerListFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 24)
+PlayerListFrame.BorderSizePixel = 0
+PlayerListFrame.ScrollBarThickness = 3
+PlayerListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+PlayerListFrame.LayoutOrder = 6
+PlayerListFrame.Active = true
+Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
+
+local PlayerListLayout = Instance.new("UIListLayout", PlayerListFrame)
+PlayerListLayout.Padding = UDim.new(0, 3)
+
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Radius = FOVRadius
+FOVCircle.Thickness = 2
+FOVCircle.Color = Color3.fromRGB(150, 50, 255)
+FOVCircle.Transparency = 0.7
+FOVCircle.Filled = false
+FOVCircle.Visible = false
+
+local AIM_MODES = {
+    {part = "UnderfootRPG"},
+    {part = "Head"},
+    {part = "HumanoidRootPart"},
+}
+local currentModeIndex = 1
+
+local function UpdateProtectedList()
+    for _, b in pairs(PlayerButtons) do b:Destroy() end
+    PlayerButtons = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local btn = Instance.new("TextButton", PlayerListFrame)
+            btn.Size = UDim2.new(1, -4, 0, 22)
+            btn.Active = true
+            local prot = ProtectedPlayers[p] or false
+            btn.BackgroundColor3 = prot and Color3.fromRGB(110, 0, 220) or Color3.fromRGB(35, 35, 48)
+            btn.Text = p.DisplayName .. (prot and " [Protected]" or "")
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 11
+            btn.Font = Enum.Font.Gotham
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            table.insert(PlayerButtons, btn)
+
+            btn.MouseButton1Click:Connect(function()
+                ProtectedPlayers[p] = not ProtectedPlayers[p]
+                UpdateProtectedList()
+            end)
+        end
+    end
+end
+UpdateProtectedList()
+
+local function IsAlive(char)
+    local h = char and char:FindFirstChildOfClass("Humanoid")
+    return h and h.Health > 0
+end
+
+local function GetTargetPosition(char)
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local head = char:FindFirstChild("Head")
+    if not root then return nil end
+
+    local mode = AIM_MODES[currentModeIndex]
+    
+    if mode.part == "Head" then
+        return head and head.Position or root.Position
+    elseif mode.part == "HumanoidRootPart" then
+        return root.Position
+    elseif mode.part == "UnderfootRPG" then
+        local vel = root.Velocity
+        local predictionMultiplier = 0.85 
+        local predictedPos = root.Position + Vector3.new(vel.X * predictionMultiplier, vel.Y * 0.5, vel.Z * predictionMultiplier)
+        predictedPos = predictedPos - Vector3.new(0, 4.0, 0)
+        return predictedPos
+    end
+    return root.Position
+end
+
+local function GetClosest()
+    local closest, distMin = nil, math.huge
+    local center = Camera.ViewportSize / 2
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and not ProtectedPlayers[p] and p.Character and IsAlive(p.Character) then
+            local targetPos = GetTargetPosition(p.Character)
+            if targetPos then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    if dist < distMin and dist <= FOVRadius then
+                        distMin = dist
+                        closest = p
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function drinkSlot2Only()
+    pcall(function()
+        local bp = LocalPlayer:FindFirstChild("Backpack")
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+        
+        local tools = {}
+        if bp then
+            for _, t in ipairs(bp:GetChildren()) do
+                if t:IsA("Tool") then table.insert(tools, t) end
+            end
+        end
+        for _, t in ipairs(char:GetChildren()) do
+            if t:IsA("Tool") then table.insert(tools, t) end
+        end
+        
+        local drinkTool = tools[2]
+        if drinkTool and drinkTool:IsA("Tool") then
+            hum:EquipTool(drinkTool)
+            task.wait(0.05)
+            drinkTool:Activate()
+        end
+    end)
+end
+
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = Camera.ViewportSize / 2
+    FOVCircle.Radius = FOVRadius
+    FOVCircle.Visible = AimbotOn
+    
+    if AimbotOn then
+        local target = GetClosest()
+        if target and target.Character then
+            local targetPos = GetTargetPosition(target.Character)
+            if targetPos then
+                local cf = CFrame.new(Camera.CFrame.Position, targetPos)
+                Camera.CFrame = Camera.CFrame:Lerp(cf, AIM_SMOOTHNESS)
+            end
+        end
+    end
+    
+    if AutoDrinkOn then
+        if tick() - lastDrinkTime >= DRINK_COOLDOWN then
+            lastDrinkTime = tick()
+            drinkSlot2Only()
+        end
+    end
+end)
+
+ESPInventoryToggle.MouseButton1Click:Connect(function()
+    espInventoryEnabled = not espInventoryEnabled
+    ESPInventoryToggle.BackgroundColor3 = espInventoryEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(200, 50, 50)
+    ESPInventoryToggle.Text = espInventoryEnabled and "Loot & Name ESP: Active" or "Loot & Name ESP: Off"
+end)
+
+AimbotToggle.MouseButton1Click:Connect(function()
+    AimbotOn = not AimbotOn
+    AimbotToggle.BackgroundColor3 = AimbotOn and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(200, 50, 50)
+    AimbotToggle.Text = AimbotOn and "AI Ultra Aim-Lock: Active" or "AI Ultra Aim-Lock: Off"
+end)
+
+AimPartToggle.MouseButton1Click:Connect(function()
+    currentModeIndex = currentModeIndex % #AIM_MODES + 1
+    local names = {"Target: Underfoot (Jump AI)", "Target: Head", "Target: Body"}
+    AimPartToggle.Text = names[currentModeIndex]
+end)
+
+AutoDrinkToggle.MouseButton1Click:Connect(function()
+    AutoDrinkOn = not AutoDrinkOn
+    AutoDrinkToggle.BackgroundColor3 = AutoDrinkOn and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(200, 50, 50)
+    AutoDrinkToggle.Text = AutoDrinkOn and "Auto Drink Slot 2 Only: Active" or "Auto Drink Slot 2 Only: Off"
+    if AutoDrinkOn then
+        lastDrinkTime = tick()
+    end
+end)
+
+local function toggleUI()
+    guiOpen = not guiOpen
+    MainFrame.Visible = guiOpen
+    ToggleButton.Text = guiOpen and "CLOSE" or "OPEN"
+    ToggleButton.BackgroundColor3 = guiOpen and Color3.fromRGB(110, 0, 220) or Color3.fromRGB(50, 50, 70)
+end
+
+ToggleButton.MouseButton1Click:Connect(toggleUI)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.G then
+        toggleUI()
+    end
+end)
