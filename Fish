@@ -1,4 +1,4 @@
--- IQNNZ BLOCK SPIN (FULL CODE WITH UI & OPTIONS)
+-- IQNNZ BLOCK SPIN (UI FIX & SIDEBAR ALIGNMENT)
 if getgenv().IqnnzBlockSpin_Loaded then
 	return
 end
@@ -382,7 +382,7 @@ Frame3 = fn("Frame", {
 	BorderSizePixel = 0,
 	Visible = false,
 	ClipsDescendants = true,
-	ZIndex = 2,
+	ZIndex = 10,
 	Parent = screenGui,
 })
 
@@ -393,25 +393,6 @@ uiScale.Name = "MainUIScale"
 uiScale.Scale = 1
 uiScale.Parent = Frame3
 
-fn("ImageLabel", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 0,
-	BackgroundColor3 = tbl.Background,
-	Image = "rbxassetid://72916852257641",
-	ScaleType = Enum.ScaleType.Crop,
-	ZIndex = 1,
-	Parent = Frame3,
-})
-
-fn("Frame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = tbl.Overlay,
-	BackgroundTransparency = 0.45,
-	BorderSizePixel = 0,
-	ZIndex = 1,
-	Parent = Frame3,
-})
-
 local v, v2
 do
 	local Frame4 = fn("Frame", {
@@ -419,7 +400,7 @@ do
 		Size = UDim2.new(1, 0, 0, 42),
 		BackgroundColor3 = tbl.Panel,
 		BorderSizePixel = 0,
-		ZIndex = 3,
+		ZIndex = 15,
 		Parent = Frame3,
 	})
 
@@ -430,7 +411,7 @@ do
 		Position = UDim2.new(0, 0, 1, -16),
 		BackgroundColor3 = tbl.Panel,
 		BorderSizePixel = 0,
-		ZIndex = 3,
+		ZIndex = 15,
 		Parent = Frame4,
 	})
 
@@ -444,7 +425,7 @@ do
 		TextColor3 = tbl.Accent,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextSize = 16,
-		ZIndex = 4,
+		ZIndex = 16,
 		Parent = Frame4,
 	})
 
@@ -453,7 +434,7 @@ do
 		Position = UDim2.new(1, -82, 0.5, 0),
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 1,
-		ZIndex = 5,
+		ZIndex = 17,
 		Parent = Frame4,
 	})
 
@@ -474,7 +455,7 @@ do
 			Text = arg,
 			TextColor3 = tbl.SubText,
 			TextSize = 16,
-			ZIndex = 5,
+			ZIndex = 17,
 			Parent = Frame5,
 		})
 
@@ -566,22 +547,22 @@ end
 local Frame4 = fn("Frame", {
 	Name = "Sidebar",
 	Size = UDim2.new(0, 150, 1, -42),
-	Position = UDim2.new(1, -150, 0, 42),
+	Position = UDim2.new(0, 0, 0, 42),
 	BackgroundColor3 = tbl.Panel,
 	BackgroundTransparency = 0.05,
 	BorderSizePixel = 0,
-	ZIndex = 2,
+	ZIndex = 12,
 	Parent = Frame3,
 })
 
-local Frame6 = fn("Frame", { Size = UDim2.new(1, 0, 0, 58), BackgroundTransparency = 1, ZIndex = 3, Parent = Frame4 })
+local Frame6 = fn("Frame", { Size = UDim2.new(1, 0, 0, 58), BackgroundTransparency = 1, ZIndex = 13, Parent = Frame4 })
 local Frame5 = fn("Frame", {
 	Name = "UptimeBadge",
 	Size = UDim2.fromOffset(90, 20),
 	Position = UDim2.fromOffset(14, 18),
 	BackgroundColor3 = tbl.GreenDim,
 	BackgroundTransparency = 0.25,
-	ZIndex = 3,
+	ZIndex = 13,
 	Parent = Frame6,
 })
 
@@ -593,7 +574,7 @@ local Frame7 = fn("Frame", {
 	Position = UDim2.fromOffset(8, 7),
 	BackgroundColor3 = tbl.Green,
 	BorderSizePixel = 0,
-	ZIndex = 4,
+	ZIndex = 14,
 	Parent = Frame5,
 })
 fn("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Frame7 })
@@ -607,7 +588,7 @@ local TextLabel3 = fn("TextLabel", {
 	TextColor3 = tbl.Green,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextSize = 12,
-	ZIndex = 4,
+	ZIndex = 14,
 	Parent = Frame5,
 })
 
@@ -633,7 +614,7 @@ fn("Frame", {
 	Position = UDim2.fromOffset(10, 58),
 	BackgroundColor3 = tbl.Stroke,
 	BorderSizePixel = 0,
-	ZIndex = 3,
+	ZIndex = 13,
 	Parent = Frame4,
 })
 
@@ -646,23 +627,23 @@ local ScrollingFrame = fn("ScrollingFrame", {
 	ScrollBarImageColor3 = tbl.AccentDim,
 	CanvasSize = UDim2.fromOffset(0, 0),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ZIndex = 3,
+	ZIndex = 13,
 	Parent = Frame4,
 })
 
 fn("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = ScrollingFrame })
+
 local Frame8 = fn("Frame", {
 	Name = "ContentArea",
 	Size = UDim2.new(1, -150, 1, -42),
-	Position = UDim2.new(0, 0, 0, 42),
+	Position = UDim2.new(0, 150, 0, 42),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
-	ZIndex = 2,
+	ZIndex = 12,
 	Parent = Frame3,
 })
 
--- إضافة الأزرار والقوائم الجانبية ومحتوى الأقسام الكامل
-local function createTab(name, iconId)
+local function createTab(name)
 	local btn = fn("TextButton", {
 		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundColor3 = tbl.PanelLight,
@@ -673,7 +654,7 @@ local function createTab(name, iconId)
 		TextColor3 = tbl.Text,
 		TextSize = 13,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 4,
+		ZIndex = 14,
 		Parent = ScrollingFrame,
 	})
 	fn("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn })
@@ -685,7 +666,7 @@ local function createTab(name, iconId)
 		ScrollBarThickness = 3,
 		Visible = false,
 		CanvasSize = UDim2.fromOffset(0, 400),
-		ZIndex = 3,
+		ZIndex = 13,
 		Parent = Frame8,
 	})
 	fn("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = content })
@@ -702,7 +683,8 @@ end
 local autoTab = createTab("Auto Farm")
 local statsTab = createTab("Stats & Info")
 
--- أمثلة عناصر داخل الأقسام
+autoTab.Visible = true
+
 local function addToggle(parent, title, callback)
 	local toggle = fn("TextButton", {
 		Size = UDim2.new(1, 0, 0, 40),
@@ -712,7 +694,7 @@ local function addToggle(parent, title, callback)
 		Font = gothamMedium,
 		TextSize = 13,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 4,
+		ZIndex = 14,
 		Parent = parent,
 	})
 	fn("UICorner", { CornerRadius = UDim.new(0, 8), Parent = toggle })
