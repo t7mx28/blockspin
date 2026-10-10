@@ -1,4 +1,4 @@
--- IQNNZ BLOCK SPIN (FULL SCRIPT)
+-- 'iqnnz'(FINAL TOUCH FIX)
 if getgenv().IqnnzBlockSpin_Loaded then
 	return
 end
@@ -268,49 +268,27 @@ Frame = fn("Frame", {
 	Name = "DeviceOverlay",
 	Size = UDim2.fromScale(1, 1),
 	BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-	BackgroundTransparency = 1,
+	BackgroundTransparency = 0.45,
 	BorderSizePixel = 0,
-	ZIndex = 20,
+	ZIndex = 10,
 	Parent = screenGui,
 })
 
-fn2(Frame, TweenInfo.new(0.35), { BackgroundTransparency = 0.45 })
 local Frame2
 Frame2 = fn("Frame", {
 	Name = "DeviceCard",
-	Size = UDim2.fromOffset(300, 0),
+	Size = UDim2.fromOffset(300, 190),
 	Position = UDim2.fromScale(0.5, 0.5),
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	BackgroundColor3 = tbl.Panel,
 	BorderSizePixel = 0,
 	ClipsDescendants = true,
-	ZIndex = 21,
+	ZIndex = 11,
 	Parent = Frame,
 })
 
 fn("UICorner", { CornerRadius = UDim.new(0, 14), Parent = Frame2 })
 fn("UIStroke", { Color = tbl.Accent, Thickness = 1, Transparency = 0.4, Parent = Frame2 })
-
-fn("ImageLabel", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 0,
-	BackgroundColor3 = tbl.Panel,
-	Image = "rbxassetid://95647138374178",
-	ScaleType = Enum.ScaleType.Crop,
-	ZIndex = 21,
-	Parent = Frame2,
-})
-
-fn("Frame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = tbl.Overlay,
-	BackgroundTransparency = 0.35,
-	BorderSizePixel = 0,
-	ZIndex = 21,
-	Parent = Frame2,
-})
-
-fn2(Frame2, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(300, 190) })
 
 fn6(fn("TextLabel", {
 	Size = UDim2.new(1, -30, 0, 22),
@@ -320,7 +298,7 @@ fn6(fn("TextLabel", {
 	Text = "Choose your device",
 	TextColor3 = tbl.Text,
 	TextSize = 18,
-	ZIndex = 22,
+	ZIndex = 12,
 	Parent = Frame2,
 }), 0.3)
 
@@ -332,17 +310,19 @@ fn6(fn("TextLabel", {
 	Text = "This sets the layout size",
 	TextColor3 = tbl.SubText,
 	TextSize = 12,
-	ZIndex = 22,
+	ZIndex = 12,
 	Parent = Frame2,
 }), 0.4)
 
 local pc, Mobile
+local MainFrameSelected = false
+
 do
 	local Frame3 = fn("Frame", {
 		Size = UDim2.new(1, -30, 0, 90),
 		Position = UDim2.fromOffset(15, 80),
 		BackgroundTransparency = 1,
-		ZIndex = 22,
+		ZIndex = 12,
 		Parent = Frame2,
 	})
 
@@ -359,12 +339,12 @@ do
 			Size = UDim2.new(0.47, 0, 1, 0),
 			BackgroundColor3 = tbl.PanelLight,
 			BackgroundTransparency = 0.1,
-			AutoButtonColor = false,
+			AutoButtonColor = true,
 			Font = gothamMedium,
 			Text = arg,
 			TextColor3 = tbl.Text,
 			TextSize = 16,
-			ZIndex = 22,
+			ZIndex = 13,
 			Parent = Frame3,
 		})
 
@@ -372,14 +352,17 @@ do
 		fn("UICorner", { CornerRadius = UDim.new(0, 10), Parent = TextButton })
 		fn("UIStroke", { Color = tbl.Accent, Thickness = 1, Transparency = 0.3, Parent = TextButton })
 
-		TextButton.MouseEnter:Connect(function()
-			local tbl2 = { BackgroundColor3 = tbl.AccentDim, BackgroundTransparency = 0 }
-			fn2(TextButton, TweenInfo.new(0.15), tbl2)
-		end)
-
-		TextButton.MouseLeave:Connect(function()
-			local tbl2 = { BackgroundColor3 = tbl.PanelLight, BackgroundTransparency = 0.1 }
-			fn2(TextButton, TweenInfo.new(0.15), tbl2)
+		TextButton.Activated:Connect(function()
+			if MainFrameSelected then return end
+			MainFrameSelected = true
+			
+			local mainFrameRef = screenGui:FindFirstChild("MainFrame")
+			if mainFrameRef then
+				mainFrameRef.Size = fn7(arg == "Mobile")
+				mainFrameRef.Visible = true
+			end
+			
+			Frame:Destroy()
 		end)
 
 		return TextButton
@@ -498,18 +481,10 @@ do
 		fn("UICorner", { CornerRadius = UDim.new(1, 0), Parent = TextButton })
 		fn("UIStroke", { Color = tbl.Stroke, Thickness = 1, Parent = TextButton })
 
-		TextButton.MouseEnter:Connect(function()
-			local tbl2 = { BackgroundColor3 = arg2 }
-			fn2(TextButton, TweenInfo.new(0.15), tbl2)
-			local tbl3 = { TextColor3 = tbl.Text }
-			fn2(TextButton, TweenInfo.new(0.15), tbl3)
-		end)
-
-		TextButton.MouseLeave:Connect(function()
-			local tbl2 = { BackgroundColor3 = tbl.PanelLight }
-			fn2(TextButton, TweenInfo.new(0.15), tbl2)
-			local tbl3 = { TextColor3 = tbl.SubText }
-			fn2(TextButton, TweenInfo.new(0.15), tbl3)
+		TextButton.Activated:Connect(function()
+			if arg == "×" then
+				screenGui:Destroy()
+			end
 		end)
 
 		return TextButton
