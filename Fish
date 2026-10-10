@@ -1,4 +1,4 @@
--- 'iqnnz'(FINAL TOUCH FIX)
+-- IQNNZ BLOCK SPIN (FULL CODE WITH UI & OPTIONS)
 if getgenv().IqnnzBlockSpin_Loaded then
 	return
 end
@@ -660,6 +660,74 @@ local Frame8 = fn("Frame", {
 	ZIndex = 2,
 	Parent = Frame3,
 })
+
+-- إضافة الأزرار والقوائم الجانبية ومحتوى الأقسام الكامل
+local function createTab(name, iconId)
+	local btn = fn("TextButton", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundColor3 = tbl.PanelLight,
+		BackgroundTransparency = 0.5,
+		AutoButtonColor = true,
+		Font = gothamMedium,
+		Text = "  " .. name,
+		TextColor3 = tbl.Text,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 4,
+		Parent = ScrollingFrame,
+	})
+	fn("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn })
+	
+	local content = fn("ScrollingFrame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 3,
+		Visible = false,
+		CanvasSize = UDim2.fromOffset(0, 400),
+		ZIndex = 3,
+		Parent = Frame8,
+	})
+	fn("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = content })
+	
+	btn.Activated:Connect(function()
+		for _, child in ipairs(Frame8:GetChildren()) do
+			if child:IsA("ScrollingFrame") then child.Visible = false end
+		end
+		content.Visible = true
+	end)
+	return content
+end
+
+local autoTab = createTab("Auto Farm")
+local statsTab = createTab("Stats & Info")
+
+-- أمثلة عناصر داخل الأقسام
+local function addToggle(parent, title, callback)
+	local toggle = fn("TextButton", {
+		Size = UDim2.new(1, 0, 0, 40),
+		BackgroundColor3 = tbl.PanelLight,
+		Text = "  " .. title,
+		TextColor3 = tbl.Text,
+		Font = gothamMedium,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 4,
+		Parent = parent,
+	})
+	fn("UICorner", { CornerRadius = UDim.new(0, 8), Parent = toggle })
+	local state = false
+	toggle.Activated:Connect(function()
+		state = not state
+		toggle.TextColor3 = state and tbl.Green or tbl.Text
+		callback(state)
+	end)
+end
+
+addToggle(autoTab, "Auto Cast & Fish", function(state)
+	flag4 = state
+	fn5("Auto Farm: " .. tostring(state), state and "success" or "error")
+end)
 
 if getgenv then getgenv().identifyexecutor = nil end
 if getfenv then getfenv().identifyexecutor = nil end
