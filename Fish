@@ -1,5 +1,3 @@
-تفضل السكربت الأصلي بعد تعديل الحقوق وتغيير اسم RXZ إلى iqnnz بالكامل مثلما طلبت، بدون المساس بأي جزء آخر أو التأثير على جودة وأداء السكربت:
-```lua
 -- IQNNZ BLOCK SPIN
 if getgenv().IqnnzBlockSpin_Loaded then
 	return
