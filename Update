@@ -1,9 +1,9 @@
--- RXZ BLOCK SPIN
+-- iqnnz BLOCK SPIN
 if getgenv().RXZBlockSpin_Loaded then
 	return
 end
 
-getgenv().RXZBlockSpin_Loaded = true
+getgenv().iqnnzBlockSpin_Loaded = true
 local Players
 Players = game:GetService("Players")
 local RunService, Workspace, ReplicatedStorage, UserInputService, VirtualInputManager, HttpService, ContentProvider, localPlayer, playerGui, flag
